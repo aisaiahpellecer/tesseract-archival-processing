@@ -3,8 +3,10 @@ import pytesseract
 import cv2
 from pdf2image import convert_from_path
 from PIL import Image
+
 import matplotlib.pyplot as plt
 
+Image.MAX_IMAGE_PIXELS = None
 
 
 def mark_region(image_path):
@@ -12,10 +14,10 @@ def mark_region(image_path):
     image = cv2.imread(image_path)
 
     # define threshold of regions to ignore
-    THRESHOLD_REGION_IGNORE = 40
+    THRESHOLD_REGION_IGNORE = 80
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (9,9), 0)
+    blur = cv2.GaussianBlur(gray, (5,5), 0)
     thresh = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,11,30)
 
     # Dilate to combine adjacent text contours
@@ -48,7 +50,8 @@ for document in os.listdir(main_folder):
         dir_name = os.path.splitext(os.path.basename(document))[0] + '_resources'
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
-        page_name = f'{dir_name}/{count}.jpg'
+        page_name = f'{dir_name}/resource_{count}.jpg'
+
         page.save(page_name, 'JPEG')
 
         mark_region(page_name)
@@ -61,11 +64,10 @@ for document in os.listdir(main_folder):
 
         # load the original image
         image = cv2.imread(page_name)
-
-        # get co-ordinates to crop the image
         raw_text = []
-        for i in range(len(line_items_coordinates)):
-            c = line_items_coordinates[i]
+        # get co-ordinates to crop the image
+        for i in range(20):
+            c = line_items_coordinates[-i]
         # cropping image img = image[y0:y1, x0:x1]
             img = image[c[0][1]:c[1][1], c[0][0]:c[1][0]]    
 
@@ -74,8 +76,8 @@ for document in os.listdir(main_folder):
 
             # pytesseract image to string to get results
             text = str(pytesseract.image_to_string(thresh1, config='--psm 6'))
-            if len(text)>=3:
-                raw_text.append(text)
-
+            # if len(text)>=3:
+            raw_text.append(text.strip())
+            # raw_text = " ".join(text)
 print(raw_text)
-
+print(" ".join(raw_text))
